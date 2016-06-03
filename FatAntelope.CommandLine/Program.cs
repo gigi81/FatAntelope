@@ -2,7 +2,6 @@
 using Microsoft.Web.XmlTransform;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -48,6 +47,7 @@ namespace FatAntelope.CommandLine
 
             Console.WriteLine("- Comparing xml trees . . .\n");
             XDiff.Diff(tree1, tree2);
+
             if (tree1.Root.Match == MatchType.Match && tree2.Root.Match == MatchType.Match && tree1.Root.Matching == tree2.Root)
             {
                 Console.WriteLine("Warning: No difference found!\n");
@@ -76,6 +76,7 @@ namespace FatAntelope.CommandLine
 
                 source.Save(args[3]);
             }
+
             Console.WriteLine("- Finished successfully!\n");
             return (int)ExitCode.Success;
         }

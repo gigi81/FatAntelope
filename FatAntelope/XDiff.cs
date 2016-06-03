@@ -40,6 +40,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace FatAntelope
 {
@@ -58,7 +59,22 @@ namespace FatAntelope
         private const int NoConnection = 1048576;
         private const int MaxCircuitLength = 2048;
 
-        private static Dictionary<Tuple<XNode, XNode>, int> distanceLookup;
+        private static Dictionary<Tuple<XNode, XNode>, int> _distanceLookup;
+
+        /// <summary>
+        /// Check if two files are equals
+        /// </summary>
+        public static bool Equals(string filename1, string filename2)
+        {
+            var tree1 = new XTree(filename1);
+            var tree2 = new XTree(filename2);
+
+            Diff(tree1, tree2);
+
+            return (tree1.Root.Match == MatchType.Match &&
+                    tree2.Root.Match == MatchType.Match &&
+                    tree1.Root.Matching == tree2.Root);
+        }
 
         /// <summary>
         /// Compare and match the two trees
@@ -77,7 +93,7 @@ namespace FatAntelope
                 return;
             }
 
-            distanceLookup = new Dictionary<Tuple<XNode, XNode>, int>();
+            _distanceLookup = new Dictionary<Tuple<XNode, XNode>, int>();
             SetMatching(tree1.Root, tree2.Root, MatchType.Change);
             DiffElements(tree1.Root, tree2.Root);
         }
@@ -449,7 +465,7 @@ namespace FatAntelope
                             ? new Tuple<XNode, XNode>(nodes1[i], nodes2[j])
                             : new Tuple<XNode, XNode>(nodes2[j], nodes1[i]);
 
-                        distanceLookup[key] = dist;
+                        _distanceLookup[key] = dist;
                     }
 
                     distance[i, j] = dist;
@@ -509,7 +525,7 @@ namespace FatAntelope
 
                 int dist = DistanceElements(node1, node2, threshold);
                 if (toRecord && (dist < NoConnection))
-                    distanceLookup[new Tuple<XNode, XNode>(node1, node2)] = dist;
+                    _distanceLookup[new Tuple<XNode, XNode>(node1, node2)] = dist;
 
                 return dist;
             }
@@ -774,42 +790,42 @@ namespace FatAntelope
         /// Compute the minimal editing distance between two lists of elements
         /// </summary>
         private static int DistanceMatchList(XNode[] nodes1, XNode[] nodes2, bool treeOrder)
-	    {
+        {
             var distance = new int[nodes1.Length + 1, nodes2.Length + 1];
             var matching1 = new int[nodes1.Length];
             var matching2 = new int[nodes2.Length];
 
-		    // Insert cost.
+            // Insert cost.
             for (int i = 0; i < nodes2.Length; i++)
                 distance[nodes1.Length, i] = nodes2[i].GetDescendantCount() + 1;
 
             for (int i = 0; i < nodes1.Length; i++)
-		    {
+            {
                 // delete cost.
                 int deleteCost = nodes1[i].GetDescendantCount() + 1;
                 distance[i, nodes2.Length] = deleteCost;
 
                 for (int j = 0; j < nodes2.Length; j++)
-			    {
+                {
                     var dist = treeOrder 
                         ? Distance(nodes1[i], nodes2[j], true, NoConnection) 
                         : Distance(nodes2[j], nodes1[i], true, NoConnection);
 
-				    if (dist < NoConnection)
-				    {
-					    var key = treeOrder
+                    if (dist < NoConnection)
+                    {
+                        var key = treeOrder
                             ? new Tuple<XNode, XNode>(nodes1[i], nodes2[j])
                             : new Tuple<XNode, XNode>(nodes2[j], nodes1[i]);
                         
-						distanceLookup[key] = dist;
-				    }
-				    distance[i, j] = dist;
-			    }
-		    }
+                        _distanceLookup[key] = dist;
+                    }
+                    distance[i, j] = dist;
+                }
+            }
 
-		    // compute the minimal cost matching.
+            // compute the minimal cost matching.
             return FindMinimalMatching(distance, matching1, matching2);
-	    }
+        }
 
 
         /// <summary>
